@@ -270,7 +270,7 @@ export class Store<
     Q_N3 extends BaseQuad = Quad,
     OutQuad extends RDF.BaseQuad = RDF.Quad,
     InQuad extends RDF.BaseQuad = RDF.Quad,
-> implements RDF.Store<Q_RDF>, RDF.DatasetCore<OutQuad, InQuad> {
+> implements RDF.Store<Q_RDF>, RDF.DatasetCore<OutQuad, InQuad>, RDF.Dataset<OutQuad, InQuad> {
     constructor(triples?: Q_RDF[], options?: StoreOptions);
     readonly size: number;
     add(quad: InQuad): this;
@@ -310,7 +310,7 @@ export class Store<
         predicate?: Term | null,
         object?: Term | null,
         graph?: Term | null,
-    ): RDF.Stream<Q_RDF> & RDF.DatasetCore<OutQuad, InQuad>;
+    ): RDF.Stream<Q_RDF> & RDF.Dataset<OutQuad, InQuad>;
     countQuads(subject: OTerm, predicate: OTerm, object: OTerm, graph: OTerm): number;
     forEach(callback: QuadCallback<Q_N3>, subject: OTerm, predicate: OTerm, object: OTerm, graph: OTerm): void;
     every(callback: QuadPredicate<Q_N3>, subject: OTerm, predicate: OTerm, object: OTerm, graph: OTerm): boolean;
