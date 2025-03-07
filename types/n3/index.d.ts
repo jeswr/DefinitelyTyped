@@ -261,8 +261,8 @@ export class StreamWriter<Q extends RDF.BaseQuad = RDF.Quad> extends stream.Tran
     import(stream: RDF.Stream<Q>): EventEmitter;
 }
 
-export class StoreFactory implements RDF.DatasetFactory<RDF.BaseQuad, Quad, Store> {
-    dataset(quads?: RDF.BaseQuad[]): Store;
+export class StoreFactory implements RDF.DatasetFactory<RDF.BaseQuad, Quad, Store>, RDF.DatasetFactory<RDF.BaseQuad, Quad, Store> {
+    dataset(quads?: RDF.BaseQuad[] | RDF.DatasetCore): Store;
 }
 
 export interface Rule {
@@ -286,7 +286,7 @@ export class Store<
     OutQuad extends RDF.BaseQuad = RDF.Quad,
     InQuad extends RDF.BaseQuad = RDF.Quad,
 > implements RDF.Store<Q_RDF>, RDF.Dataset<OutQuad, InQuad> {
-    constructor(triples?: Q_RDF[], options?: StoreOptions);
+    constructor(triples?: Q_RDF[] | RDF.Dataset<InQuad, InQuad>, options?: StoreOptions);
     addAll(quads: RDF.Dataset<InQuad, InQuad> | InQuad[]): this;
     contains(other: RDF.Dataset<InQuad, InQuad>): boolean;
     deleteMatches(subject?: RDF.Term, predicate?: RDF.Term, object?: RDF.Term, graph?: RDF.Term): this;
@@ -295,7 +295,7 @@ export class Store<
     filter(iteratee: (quad: OutQuad, dataset: this) => boolean): RDF.Dataset<OutQuad, InQuad>;
     intersection(other: RDF.Dataset<InQuad, InQuad>): RDF.Dataset<OutQuad, InQuad>;
     map(iteratee: (quad: OutQuad, dataset: RDF.Dataset<OutQuad, OutQuad>) => OutQuad): RDF.Dataset<OutQuad, InQuad>;
-    reduce<A>(callback: (accumulator: A, quad: OutQuad, dataset: this) => A, initialValue?: A | undefined): A;
+    reduce<A>(callback: (accumulator: A, quad: OutQuad, dataset: this) => A, initialValue?: A): A;
     toArray(): OutQuad[];
     toCanonical(): string;
     toStream(): RDF.Stream<OutQuad>;
