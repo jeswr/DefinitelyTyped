@@ -60,6 +60,16 @@ function test_literal_auto_datatypes() {
     N3.DataFactory.literal({});
 }
 
+declare const exactInteger: bigint;
+
+function test_literal_bigint() {
+    const fromBigInt: N3.Literal = N3.DataFactory.literal(exactInteger);
+    const typedBigInt: N3.Literal = N3.DataFactory.literal(
+        exactInteger,
+        N3.DataFactory.namedNode("http://www.w3.org/2001/XMLSchema#long"),
+    );
+}
+
 /*
 The following tests are taken from ...
 https://github.com/RubenVerborgh/N3.js/blob/master/README.md
