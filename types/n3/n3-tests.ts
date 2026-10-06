@@ -666,7 +666,7 @@ function test_writer_blank_list_and_callbacks() {
     writer.blank(); // $ExpectType BlankNode
     writer.blank(knows, writer.blank(name, jerry)); // $ExpectType BlankNode
     writer.blank([{ predicate: name, object: writer.blank() }]); // $ExpectType BlankNode
-    writer.blank(N3.DataFactory.quad(tom, name, jerry)); // $ExpectType BlankNode
+    writer.blank({ predicate: name, object: jerry }); // $ExpectType BlankNode
     writer.blank([N3.DataFactory.quad(tom, name, jerry)]); // $ExpectType BlankNode
     const inlineQuad: RDF.Quad = {
         termType: "Quad",
@@ -677,7 +677,7 @@ function test_writer_blank_list_and_callbacks() {
         graph: N3.DataFactory.defaultGraph(),
         equals: () => false,
     };
-    writer.blank(inlineQuad); // $ExpectType BlankNode
+    writer.blank([inlineQuad]); // $ExpectType BlankNode
     writer.list([tom, jerry]); // $ExpectType BlankNode
     writer.list([writer.blank(), writer.list([])]); // $ExpectType BlankNode
     writer.list(); // $ExpectType BlankNode
@@ -696,6 +696,10 @@ function test_writer_blank_list_and_callbacks() {
     const notAnArray: N3.Quad_Object[] = writer.list([tom]);
     // @ts-expect-error
     writer.addQuad(tom, knows, [tom]);
+    // @ts-expect-error
+    writer.blank(N3.DataFactory.quad(tom, name, jerry));
+    // @ts-expect-error
+    writer.blank(inlineQuad);
 
     writer.end((error, result) => {
         error; // $ExpectType Error | null | undefined

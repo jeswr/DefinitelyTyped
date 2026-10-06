@@ -286,7 +286,8 @@ export class Writer<Q extends RDF.BaseQuad = RDF.Quad> {
      * Only use it as the subject or object of a quad written by this Writer.
      */
     blank(predicate: Q["predicate"], object: Q["object"]): BlankNode;
-    blank(triple?: BlankTriple<Q> | RDF.Quad | Array<BlankTriple<Q> | RDF.Quad>): BlankNode;
+    // A single quad is rejected: its termType sends it down the (predicate, object) path at runtime.
+    blank(triple?: (BlankTriple<Q> & { termType?: never }) | Array<BlankTriple<Q> | RDF.Quad>): BlankNode;
     /**
      * Returns an already-serialized list (`( ... )`), typed as a BlankNode.
      * Only use it as the subject or object of a quad written by this Writer.
