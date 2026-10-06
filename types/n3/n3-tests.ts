@@ -747,6 +747,8 @@ function test_store_optional_pattern_terms() {
     // @ts-expect-error
     store.has(42);
     // @ts-expect-error
+    store.has(N3.DataFactory.quad(tom, tom, tom), tom);
+    // @ts-expect-error
     store.getSubjects(42);
     // @ts-expect-error
     store.getPredicates(42);

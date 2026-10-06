@@ -358,7 +358,13 @@ export class Store<
     addQuads(quads: Q_RDF[]): void;
     delete(quad: InQuad): this;
     has(quad: InQuad): boolean;
-    has(subject?: OTerm, predicate?: OTerm, object?: OTerm, graph?: OTerm): boolean;
+    // A quad subject is left out: N3 reads a first argument with a `subject` as a whole quad.
+    has(
+        subject?: Exclude<OTerm, RDF.BaseQuad>,
+        predicate?: OTerm,
+        object?: OTerm,
+        graph?: OTerm,
+    ): boolean;
     import(stream: RDF.Stream<Q_RDF & InQuad>): EventEmitter & Promise<this>;
     removeQuad(
         subject: Q_RDF["subject"],
