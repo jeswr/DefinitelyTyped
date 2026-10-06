@@ -661,12 +661,34 @@ function test_writer_serialized_terms() {
     const knows = N3.DataFactory.namedNode("http://xmlns.com/foaf/0.1/knows");
     const name = N3.DataFactory.namedNode("http://xmlns.com/foaf/0.1/name");
     const tom = N3.DataFactory.namedNode("http://example.org/cartoons#Tom");
+    const jerry = N3.DataFactory.literal("Jerry");
 
-    const empty: N3.SerializedTerm = writer.blank();
-    const nested: N3.SerializedTerm = writer.blank(knows, writer.blank(name, N3.DataFactory.literal("Jerry")));
-    const list: N3.SerializedTerm = writer.list([tom, N3.DataFactory.literal("Jerry")]);
-    writer.addQuad(nested, knows, list);
-    writer.addQuad(tom, knows, writer.blank([{ predicate: name, object: empty }]));
+    writer.blank(); // $ExpectType SerializedTerm
+    writer.blank(knows, writer.blank(name, jerry)); // $ExpectType SerializedTerm
+    writer.blank([{ predicate: name, object: writer.blank() }]); // $ExpectType SerializedTerm
+    writer.blank(N3.DataFactory.quad(tom, name, jerry)); // $ExpectType SerializedTerm
+    writer.blank([N3.DataFactory.quad(tom, name, jerry)]); // $ExpectType SerializedTerm
+    const inlineQuad: RDF.Quad = {
+        termType: "Quad",
+        value: "",
+        subject: tom,
+        predicate: name,
+        object: jerry,
+        graph: N3.DataFactory.defaultGraph(),
+        equals: () => false,
+    };
+    writer.blank(inlineQuad); // $ExpectType SerializedTerm
+    writer.list([tom, jerry]); // $ExpectType SerializedTerm
+    writer.list([writer.blank(), writer.list([])]); // $ExpectType SerializedTerm
+    writer.list(); // $ExpectType SerializedTerm
+    writer.list(null); // $ExpectType SerializedTerm
+
+    writer.addQuad(writer.blank(knows, tom), knows, writer.list([tom])); // $ExpectType void
+    writer.addQuad(tom, knows, jerry, (error) => {
+        error; // $ExpectType Error | null | undefined
+    });
+    writer.addQuad(tom, knows, jerry, N3.DataFactory.defaultGraph(), () => {});
+    writer.addQuad(N3.DataFactory.quad(tom, knows, jerry), (error) => {});
 
     // @ts-expect-error
     const notABlankNode: N3.BlankNode = writer.blank();
@@ -675,27 +697,75 @@ function test_writer_serialized_terms() {
     // @ts-expect-error
     writer.addQuad(tom, knows, [tom]);
     // @ts-expect-error
+    writer.addQuad(tom, knows, N3.DataFactory.defaultGraph());
+    // @ts-expect-error
+    const notSerialized: N3.SerializedTerm = tom;
+
+    writer.end((error, result) => {
+        error; // $ExpectType Error | null | undefined
+        result; // $ExpectType string | undefined
+    });
+    writer.end((error, result: string) => {});
+    writer.end();
+    // @ts-expect-error
     writer.end(() => {}, "result");
-    writer.end((error, result) => {});
 }
 
 function test_store_optional_pattern_terms() {
-    const store: N3.Store = new N3.Store();
+    const store = new N3.Store();
     const tom = N3.DataFactory.namedNode("http://example.org/cartoons#Tom");
 
-    const all: N3.Quad[] = store.getQuads();
-    const fromTom: N3.Quad[] = store.getQuads(tom);
-    const iterated: Iterable<RDF.Quad> = store.readQuads(tom, undefined, null);
-    const count: number = store.countQuads();
-    const subjects: N3.Quad_Subject[] = store.getSubjects();
-    const predicates: N3.Quad_Predicate[] = store.getPredicates(tom);
-    const objects: N3.Quad_Object[] = store.getObjects(tom);
-    const graphs: N3.Quad_Graph[] = store.getGraphs();
-    store.forEach((quad: N3.Quad) => {}, tom);
-    const every: boolean = store.every((quad: N3.Quad) => true, null, undefined);
-    const some: boolean = store.some((quad: N3.Quad) => true, tom);
+    store.getQuads(); // $ExpectType Quad[]
+    store.getQuads(tom, undefined, null); // $ExpectType Quad[]
+    store.readQuads(); // $ExpectType Iterable<Quad>
+    store.countQuads(); // $ExpectType number
+    store.has(); // $ExpectType boolean
+    store.has(tom); // $ExpectType boolean
+    store.has(null, undefined, null); // $ExpectType boolean
+    store.has(N3.DataFactory.quad(tom, tom, tom)); // $ExpectType boolean
+    store.getSubjects(); // $ExpectType Quad_Subject[]
+    store.getPredicates(tom); // $ExpectType Quad_Predicate[]
+    store.getObjects(tom); // $ExpectType Quad_Object[]
+    store.getGraphs(); // $ExpectType Quad_Graph[]
+    store.forEach((quad, dataset) => {
+        quad; // $ExpectType Quad
+        const store: N3.Store = dataset;
+    }, tom);
+    store.every((quad, dataset) => dataset.has(quad), null, undefined); // $ExpectType boolean
+    store.some((quad, dataset) => dataset.has(quad), tom); // $ExpectType boolean
     store.forSubjects((subject) => {});
     store.forPredicates((predicate) => {});
     store.forObjects((object) => {}, tom);
     store.forGraphs((graph) => {});
+
+    // @ts-expect-error
+    store.getQuads(42);
+    // @ts-expect-error
+    store.countQuads(42);
+    // @ts-expect-error
+    store.readQuads(42);
+    // @ts-expect-error
+    store.has(42);
+    // @ts-expect-error
+    store.getSubjects(42);
+    // @ts-expect-error
+    store.getPredicates(42);
+    // @ts-expect-error
+    store.getObjects(42);
+    // @ts-expect-error
+    store.getGraphs(42);
+    // @ts-expect-error
+    store.forEach(() => {}, 42);
+    // @ts-expect-error
+    store.every(() => true, 42);
+    // @ts-expect-error
+    store.some(() => true, 42);
+    // @ts-expect-error
+    store.forSubjects(() => {}, 42);
+    // @ts-expect-error
+    store.forPredicates(() => {}, 42);
+    // @ts-expect-error
+    store.forObjects(() => {}, 42);
+    // @ts-expect-error
+    store.forGraphs(() => {}, 42);
 }

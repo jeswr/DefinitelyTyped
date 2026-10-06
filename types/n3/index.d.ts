@@ -249,6 +249,7 @@ export interface WriterOptions {
  * `addQuad` on the same Writer; it is not an RDF/JS term.
  */
 export interface SerializedTerm {
+    readonly termType?: undefined;
     readonly id: string;
     readonly value: string;
     equals(other: unknown): boolean;
@@ -258,6 +259,18 @@ export interface WriterBlankTriple<Q extends RDF.BaseQuad = RDF.Quad> {
     predicate: Q["predicate"];
     object: Q["object"] | SerializedTerm;
 }
+
+/** Called once a write has been handed to the output stream. */
+export type WriterWriteCallback = (error?: Error | null) => void;
+
+/**
+ * Called when the Writer has ended. Without an output stream, `result` is the
+ * serialized document; with one, both arguments come from that stream.
+ */
+// Bivariant so that callbacks annotating `result` as `string` keep compiling.
+export type WriterEndCallback = {
+    bivarianceHack(error: Error | null | undefined, result: string | undefined): void;
+}["bivarianceHack"];
 
 export class Writer<Q extends RDF.BaseQuad = RDF.Quad> {
     constructor(options?: WriterOptions);
@@ -269,16 +282,24 @@ export class Writer<Q extends RDF.BaseQuad = RDF.Quad> {
         predicate: Q["predicate"],
         object: Q["object"] | SerializedTerm,
         graph?: Q["graph"],
-        done?: () => void,
+        done?: WriterWriteCallback,
     ): void;
-    addQuad(quad: RDF.Quad): void;
+    addQuad(
+        subject: Q["subject"] | SerializedTerm,
+        predicate: Q["predicate"],
+        object: Q["object"] | SerializedTerm,
+        done: WriterWriteCallback,
+    ): void;
+    addQuad(quad: RDF.Quad, done?: WriterWriteCallback): void;
     addQuads(quads: RDF.Quad[]): void;
     addPrefix(prefix: string, iri: RDF.NamedNode | string, done?: () => void): void;
     addPrefixes(prefixes: Prefixes<RDF.NamedNode | string>, done?: () => void): void;
-    end(done?: ErrorCallback): void;
+    end(done?: WriterEndCallback): void;
     blank(predicate: Q["predicate"], object: Q["object"] | SerializedTerm): SerializedTerm;
-    blank(triple?: WriterBlankTriple<Q> | Array<WriterBlankTriple<Q>>): SerializedTerm;
-    list(elements: Array<Q["object"]>): SerializedTerm;
+    blank(
+        triple?: WriterBlankTriple<Q> | RDF.Quad | Array<WriterBlankTriple<Q> | RDF.Quad>,
+    ): SerializedTerm;
+    list(elements?: Array<Q["object"] | SerializedTerm> | null): SerializedTerm;
 }
 
 export class StreamWriter<Q extends RDF.BaseQuad = RDF.Quad> extends stream.Transform
@@ -344,6 +365,7 @@ export class Store<
     addQuads(quads: Q_RDF[]): void;
     delete(quad: InQuad): this;
     has(quad: InQuad): boolean;
+    has(subject?: OTerm, predicate?: OTerm, object?: OTerm, graph?: OTerm): boolean;
     import(stream: RDF.Stream<Q_RDF & InQuad>): EventEmitter & Promise<this>;
     removeQuad(
         subject: Q_RDF["subject"],
@@ -372,11 +394,29 @@ export class Store<
     ): RDF.Stream<Q_RDF> & RDF.Dataset<OutQuad, InQuad>;
     countQuads(subject?: OTerm, predicate?: OTerm, object?: OTerm, graph?: OTerm): number;
     forEach(callback: (quad: OutQuad, dataset: this) => void): void;
-    forEach(callback: QuadCallback<Q_N3>, subject?: OTerm, predicate?: OTerm, object?: OTerm, graph?: OTerm): void;
+    forEach(
+        callback: (quad: Q_N3, dataset: this) => void,
+        subject?: OTerm,
+        predicate?: OTerm,
+        object?: OTerm,
+        graph?: OTerm,
+    ): void;
     every(iteratee: (quad: OutQuad, dataset: this) => boolean): boolean;
-    every(callback: QuadPredicate<Q_N3>, subject?: OTerm, predicate?: OTerm, object?: OTerm, graph?: OTerm): boolean;
+    every(
+        callback: (quad: Q_N3, dataset: this) => boolean,
+        subject?: OTerm,
+        predicate?: OTerm,
+        object?: OTerm,
+        graph?: OTerm,
+    ): boolean;
     some(iteratee: (quad: OutQuad, dataset: this) => boolean): boolean;
-    some(callback: QuadPredicate<Q_N3>, subject?: OTerm, predicate?: OTerm, object?: OTerm, graph?: OTerm): boolean;
+    some(
+        callback: (quad: Q_N3, dataset: this) => boolean,
+        subject?: OTerm,
+        predicate?: OTerm,
+        object?: OTerm,
+        graph?: OTerm,
+    ): boolean;
     getSubjects(predicate?: OTerm, object?: OTerm, graph?: OTerm): Array<Q_N3["subject"]>;
     forSubjects(callback: (result: Q_N3["subject"]) => void, predicate?: OTerm, object?: OTerm, graph?: OTerm): void;
     getPredicates(subject?: OTerm, object?: OTerm, graph?: OTerm): Array<Q_N3["predicate"]>;
