@@ -656,18 +656,18 @@ function test_writer_base_iri() {
 export const namedNode: ReturnType<RDF.DataFactory["namedNode"]> = N3.DataFactory.namedNode("hello world");
 export const df: RDF.DataFactory = N3.DataFactory;
 
-function test_writer_serialized_terms() {
+function test_writer_blank_list_and_callbacks() {
     const writer: N3.Writer = new N3.Writer();
     const knows = N3.DataFactory.namedNode("http://xmlns.com/foaf/0.1/knows");
     const name = N3.DataFactory.namedNode("http://xmlns.com/foaf/0.1/name");
     const tom = N3.DataFactory.namedNode("http://example.org/cartoons#Tom");
     const jerry = N3.DataFactory.literal("Jerry");
 
-    writer.blank(); // $ExpectType SerializedTerm
-    writer.blank(knows, writer.blank(name, jerry)); // $ExpectType SerializedTerm
-    writer.blank([{ predicate: name, object: writer.blank() }]); // $ExpectType SerializedTerm
-    writer.blank(N3.DataFactory.quad(tom, name, jerry)); // $ExpectType SerializedTerm
-    writer.blank([N3.DataFactory.quad(tom, name, jerry)]); // $ExpectType SerializedTerm
+    writer.blank(); // $ExpectType BlankNode
+    writer.blank(knows, writer.blank(name, jerry)); // $ExpectType BlankNode
+    writer.blank([{ predicate: name, object: writer.blank() }]); // $ExpectType BlankNode
+    writer.blank(N3.DataFactory.quad(tom, name, jerry)); // $ExpectType BlankNode
+    writer.blank([N3.DataFactory.quad(tom, name, jerry)]); // $ExpectType BlankNode
     const inlineQuad: RDF.Quad = {
         termType: "Quad",
         value: "",
@@ -677,11 +677,11 @@ function test_writer_serialized_terms() {
         graph: N3.DataFactory.defaultGraph(),
         equals: () => false,
     };
-    writer.blank(inlineQuad); // $ExpectType SerializedTerm
-    writer.list([tom, jerry]); // $ExpectType SerializedTerm
-    writer.list([writer.blank(), writer.list([])]); // $ExpectType SerializedTerm
-    writer.list(); // $ExpectType SerializedTerm
-    writer.list(null); // $ExpectType SerializedTerm
+    writer.blank(inlineQuad); // $ExpectType BlankNode
+    writer.list([tom, jerry]); // $ExpectType BlankNode
+    writer.list([writer.blank(), writer.list([])]); // $ExpectType BlankNode
+    writer.list(); // $ExpectType BlankNode
+    writer.list(null); // $ExpectType BlankNode
 
     writer.addQuad(writer.blank(knows, tom), knows, writer.list([tom])); // $ExpectType void
     writer.addQuad(tom, knows, jerry, (error) => {
@@ -691,22 +691,11 @@ function test_writer_serialized_terms() {
     writer.addQuad(N3.DataFactory.quad(tom, knows, jerry), (error) => {});
     writer.addQuad(tom, knows, jerry, N3.DataFactory.defaultGraph(), (error?: Error) => {});
     writer.addQuad(tom, knows, jerry, (error?: Error) => {});
-    const serialized = writer.blank(knows, tom);
-    writer.quadToString(serialized, knows, writer.list([tom])); // $ExpectType string
-    N3.termToId(serialized); // $ExpectType string
-    // @ts-expect-error
-    writer.quadToString(tom, knows, N3.DataFactory.defaultGraph());
 
-    // @ts-expect-error
-    const notABlankNode: N3.BlankNode = writer.blank();
     // @ts-expect-error
     const notAnArray: N3.Quad_Object[] = writer.list([tom]);
     // @ts-expect-error
     writer.addQuad(tom, knows, [tom]);
-    // @ts-expect-error
-    writer.addQuad(tom, knows, N3.DataFactory.defaultGraph());
-    // @ts-expect-error
-    const notSerialized: N3.SerializedTerm = tom;
 
     writer.end((error, result) => {
         error; // $ExpectType Error | null | undefined

@@ -243,23 +243,6 @@ export interface WriterOptions {
     writeBase?: boolean | undefined;
 }
 
-/**
- * A blank node or list that a Writer has already serialized, as returned by
- * `Writer.blank()` and `Writer.list()`. Use it as the subject or object of
- * `addQuad` on the same Writer; it is not an RDF/JS term.
- */
-export interface SerializedTerm {
-    readonly termType?: undefined;
-    readonly id: string;
-    readonly value: string;
-    equals(other: unknown): boolean;
-}
-
-export interface WriterBlankTriple<Q extends RDF.BaseQuad = RDF.Quad> {
-    predicate: Q["predicate"];
-    object: Q["object"] | SerializedTerm;
-}
-
 /** Called once a write has been handed to the output stream. */
 // Bivariant so that callbacks annotating `error` as `Error` keep compiling.
 export type WriterWriteCallback = {
@@ -278,24 +261,19 @@ export type WriterEndCallback = {
 export class Writer<Q extends RDF.BaseQuad = RDF.Quad> {
     constructor(options?: WriterOptions);
     constructor(fd: any, options?: WriterOptions);
-    quadToString(
-        subject: Q["subject"] | SerializedTerm,
-        predicate: Q["predicate"],
-        object: Q["object"] | SerializedTerm,
-        graph?: Q["graph"],
-    ): string;
+    quadToString(subject: Q["subject"], predicate: Q["predicate"], object: Q["object"], graph?: Q["graph"]): string;
     quadsToString(quads: RDF.Quad[]): string;
     addQuad(
-        subject: Q["subject"] | SerializedTerm,
+        subject: Q["subject"],
         predicate: Q["predicate"],
-        object: Q["object"] | SerializedTerm,
+        object: Q["object"],
         graph?: Q["graph"],
         done?: WriterWriteCallback,
     ): void;
     addQuad(
-        subject: Q["subject"] | SerializedTerm,
+        subject: Q["subject"],
         predicate: Q["predicate"],
-        object: Q["object"] | SerializedTerm,
+        object: Q["object"],
         done: WriterWriteCallback,
     ): void;
     addQuad(quad: RDF.Quad, done?: WriterWriteCallback): void;
@@ -303,11 +281,17 @@ export class Writer<Q extends RDF.BaseQuad = RDF.Quad> {
     addPrefix(prefix: string, iri: RDF.NamedNode | string, done?: () => void): void;
     addPrefixes(prefixes: Prefixes<RDF.NamedNode | string>, done?: () => void): void;
     end(done?: WriterEndCallback): void;
-    blank(predicate: Q["predicate"], object: Q["object"] | SerializedTerm): SerializedTerm;
-    blank(
-        triple?: WriterBlankTriple<Q> | RDF.Quad | Array<WriterBlankTriple<Q> | RDF.Quad>,
-    ): SerializedTerm;
-    list(elements?: Array<Q["object"] | SerializedTerm> | null): SerializedTerm;
+    /**
+     * Returns an already-serialized blank node (`[ ... ]`), typed as a BlankNode.
+     * Only use it as the subject or object of a quad written by this Writer.
+     */
+    blank(predicate: Q["predicate"], object: Q["object"]): BlankNode;
+    blank(triple?: BlankTriple<Q> | RDF.Quad | Array<BlankTriple<Q> | RDF.Quad>): BlankNode;
+    /**
+     * Returns an already-serialized list (`( ... )`), typed as a BlankNode.
+     * Only use it as the subject or object of a quad written by this Writer.
+     */
+    list(elements?: Array<Q["object"]> | null): BlankNode;
 }
 
 export class StreamWriter<Q extends RDF.BaseQuad = RDF.Quad> extends stream.Transform
@@ -461,6 +445,6 @@ export namespace Util {
     ): (prefix: string) => PrefixedToIri;
 }
 
-export function termToId(term: Term | SerializedTerm): string;
+export function termToId(term: Term): string;
 export function termFromId(id: string, factory?: RDF.DataFactory): Term;
 export function getRulesFromDataset(dataset: RDF.DatasetCore<RDF.Quad>): Rule[];
