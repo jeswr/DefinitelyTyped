@@ -243,15 +243,31 @@ export interface WriterOptions {
     writeBase?: boolean | undefined;
 }
 
+/**
+ * A blank node or list that a Writer has already serialized, as returned by
+ * `Writer.blank()` and `Writer.list()`. Use it as the subject or object of
+ * `addQuad` on the same Writer; it is not an RDF/JS term.
+ */
+export interface SerializedTerm {
+    readonly id: string;
+    readonly value: string;
+    equals(other: unknown): boolean;
+}
+
+export interface WriterBlankTriple<Q extends RDF.BaseQuad = RDF.Quad> {
+    predicate: Q["predicate"];
+    object: Q["object"] | SerializedTerm;
+}
+
 export class Writer<Q extends RDF.BaseQuad = RDF.Quad> {
     constructor(options?: WriterOptions);
     constructor(fd: any, options?: WriterOptions);
     quadToString(subject: Q["subject"], predicate: Q["predicate"], object: Q["object"], graph?: Q["graph"]): string;
     quadsToString(quads: RDF.Quad[]): string;
     addQuad(
-        subject: Q["subject"],
+        subject: Q["subject"] | SerializedTerm,
         predicate: Q["predicate"],
-        object: Q["object"] | Array<Q["object"]>,
+        object: Q["object"] | SerializedTerm,
         graph?: Q["graph"],
         done?: () => void,
     ): void;
@@ -259,10 +275,10 @@ export class Writer<Q extends RDF.BaseQuad = RDF.Quad> {
     addQuads(quads: RDF.Quad[]): void;
     addPrefix(prefix: string, iri: RDF.NamedNode | string, done?: () => void): void;
     addPrefixes(prefixes: Prefixes<RDF.NamedNode | string>, done?: () => void): void;
-    end(err?: ErrorCallback, result?: string): void;
-    blank(predicate: Q["predicate"], object: Q["object"]): BlankNode;
-    blank(triple: BlankTriple | RDF.Quad | BlankTriple[] | RDF.Quad[]): BlankNode;
-    list(triple: Array<Q["object"]>): Quad_Object[];
+    end(done?: ErrorCallback): void;
+    blank(predicate: Q["predicate"], object: Q["object"] | SerializedTerm): SerializedTerm;
+    blank(triple?: WriterBlankTriple<Q> | Array<WriterBlankTriple<Q>>): SerializedTerm;
+    list(elements: Array<Q["object"]>): SerializedTerm;
 }
 
 export class StreamWriter<Q extends RDF.BaseQuad = RDF.Quad> extends stream.Transform
@@ -346,29 +362,29 @@ export class Store<
         graph?: Term | null,
     ): EventEmitter;
     deleteGraph(graph: Q_RDF["graph"] | string): EventEmitter;
-    getQuads(subject: OTerm, predicate: OTerm, object: OTerm, graph: OTerm): Quad[];
-    readQuads(subject: OTerm, predicate: OTerm, object: OTerm, graph: OTerm): Iterable<OutQuad>;
+    getQuads(subject?: OTerm, predicate?: OTerm, object?: OTerm, graph?: OTerm): Quad[];
+    readQuads(subject?: OTerm, predicate?: OTerm, object?: OTerm, graph?: OTerm): Iterable<OutQuad>;
     match(
         subject?: Term | null,
         predicate?: Term | null,
         object?: Term | null,
         graph?: Term | null,
     ): RDF.Stream<Q_RDF> & RDF.Dataset<OutQuad, InQuad>;
-    countQuads(subject: OTerm, predicate: OTerm, object: OTerm, graph: OTerm): number;
+    countQuads(subject?: OTerm, predicate?: OTerm, object?: OTerm, graph?: OTerm): number;
     forEach(callback: (quad: OutQuad, dataset: this) => void): void;
-    forEach(callback: QuadCallback<Q_N3>, subject: OTerm, predicate: OTerm, object: OTerm, graph: OTerm): void;
+    forEach(callback: QuadCallback<Q_N3>, subject?: OTerm, predicate?: OTerm, object?: OTerm, graph?: OTerm): void;
     every(iteratee: (quad: OutQuad, dataset: this) => boolean): boolean;
-    every(callback: QuadPredicate<Q_N3>, subject: OTerm, predicate: OTerm, object: OTerm, graph: OTerm): boolean;
+    every(callback: QuadPredicate<Q_N3>, subject?: OTerm, predicate?: OTerm, object?: OTerm, graph?: OTerm): boolean;
     some(iteratee: (quad: OutQuad, dataset: this) => boolean): boolean;
-    some(callback: QuadPredicate<Q_N3>, subject: OTerm, predicate: OTerm, object: OTerm, graph: OTerm): boolean;
-    getSubjects(predicate: OTerm, object: OTerm, graph: OTerm): Array<Q_N3["subject"]>;
-    forSubjects(callback: (result: Q_N3["subject"]) => void, predicate: OTerm, object: OTerm, graph: OTerm): void;
-    getPredicates(subject: OTerm, object: OTerm, graph: OTerm): Array<Q_N3["predicate"]>;
-    forPredicates(callback: (result: Q_N3["predicate"]) => void, subject: OTerm, object: OTerm, graph: OTerm): void;
-    getObjects(subject: OTerm, predicate: OTerm, graph: OTerm): Array<Q_N3["object"]>;
-    forObjects(callback: (result: Q_N3["object"]) => void, subject: OTerm, predicate: OTerm, graph: OTerm): void;
-    getGraphs(subject: OTerm, predicate: OTerm, object: OTerm): Array<Q_N3["graph"]>;
-    forGraphs(callback: (result: Q_N3["graph"]) => void, subject: OTerm, predicate: OTerm, object: OTerm): void;
+    some(callback: QuadPredicate<Q_N3>, subject?: OTerm, predicate?: OTerm, object?: OTerm, graph?: OTerm): boolean;
+    getSubjects(predicate?: OTerm, object?: OTerm, graph?: OTerm): Array<Q_N3["subject"]>;
+    forSubjects(callback: (result: Q_N3["subject"]) => void, predicate?: OTerm, object?: OTerm, graph?: OTerm): void;
+    getPredicates(subject?: OTerm, object?: OTerm, graph?: OTerm): Array<Q_N3["predicate"]>;
+    forPredicates(callback: (result: Q_N3["predicate"]) => void, subject?: OTerm, object?: OTerm, graph?: OTerm): void;
+    getObjects(subject?: OTerm, predicate?: OTerm, graph?: OTerm): Array<Q_N3["object"]>;
+    forObjects(callback: (result: Q_N3["object"]) => void, subject?: OTerm, predicate?: OTerm, graph?: OTerm): void;
+    getGraphs(subject?: OTerm, predicate?: OTerm, object?: OTerm): Array<Q_N3["graph"]>;
+    forGraphs(callback: (result: Q_N3["graph"]) => void, subject?: OTerm, predicate?: OTerm, object?: OTerm): void;
     createBlankNode(suggestedName?: string): BlankNode;
     extractLists(options?: extractListOptions): Record<string, RDF.Term[]>;
     [Symbol.iterator](): Iterator<OutQuad>;

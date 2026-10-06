@@ -655,3 +655,47 @@ function test_writer_base_iri() {
 
 export const namedNode: ReturnType<RDF.DataFactory["namedNode"]> = N3.DataFactory.namedNode("hello world");
 export const df: RDF.DataFactory = N3.DataFactory;
+
+function test_writer_serialized_terms() {
+    const writer: N3.Writer = new N3.Writer();
+    const knows = N3.DataFactory.namedNode("http://xmlns.com/foaf/0.1/knows");
+    const name = N3.DataFactory.namedNode("http://xmlns.com/foaf/0.1/name");
+    const tom = N3.DataFactory.namedNode("http://example.org/cartoons#Tom");
+
+    const empty: N3.SerializedTerm = writer.blank();
+    const nested: N3.SerializedTerm = writer.blank(knows, writer.blank(name, N3.DataFactory.literal("Jerry")));
+    const list: N3.SerializedTerm = writer.list([tom, N3.DataFactory.literal("Jerry")]);
+    writer.addQuad(nested, knows, list);
+    writer.addQuad(tom, knows, writer.blank([{ predicate: name, object: empty }]));
+
+    // @ts-expect-error
+    const notABlankNode: N3.BlankNode = writer.blank();
+    // @ts-expect-error
+    const notAnArray: N3.Quad_Object[] = writer.list([tom]);
+    // @ts-expect-error
+    writer.addQuad(tom, knows, [tom]);
+    // @ts-expect-error
+    writer.end(() => {}, "result");
+    writer.end((error, result) => {});
+}
+
+function test_store_optional_pattern_terms() {
+    const store: N3.Store = new N3.Store();
+    const tom = N3.DataFactory.namedNode("http://example.org/cartoons#Tom");
+
+    const all: N3.Quad[] = store.getQuads();
+    const fromTom: N3.Quad[] = store.getQuads(tom);
+    const iterated: Iterable<RDF.Quad> = store.readQuads(tom, undefined, null);
+    const count: number = store.countQuads();
+    const subjects: N3.Quad_Subject[] = store.getSubjects();
+    const predicates: N3.Quad_Predicate[] = store.getPredicates(tom);
+    const objects: N3.Quad_Object[] = store.getObjects(tom);
+    const graphs: N3.Quad_Graph[] = store.getGraphs();
+    store.forEach((quad: N3.Quad) => {}, tom);
+    const every: boolean = store.every((quad: N3.Quad) => true, null, undefined);
+    const some: boolean = store.some((quad: N3.Quad) => true, tom);
+    store.forSubjects((subject) => {});
+    store.forPredicates((predicate) => {});
+    store.forObjects((object) => {}, tom);
+    store.forGraphs((graph) => {});
+}
