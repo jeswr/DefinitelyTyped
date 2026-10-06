@@ -689,6 +689,13 @@ function test_writer_serialized_terms() {
     });
     writer.addQuad(tom, knows, jerry, N3.DataFactory.defaultGraph(), () => {});
     writer.addQuad(N3.DataFactory.quad(tom, knows, jerry), (error) => {});
+    writer.addQuad(tom, knows, jerry, N3.DataFactory.defaultGraph(), (error?: Error) => {});
+    writer.addQuad(tom, knows, jerry, (error?: Error) => {});
+    const serialized = writer.blank(knows, tom);
+    writer.quadToString(serialized, knows, writer.list([tom])); // $ExpectType string
+    N3.termToId(serialized); // $ExpectType string
+    // @ts-expect-error
+    writer.quadToString(tom, knows, N3.DataFactory.defaultGraph());
 
     // @ts-expect-error
     const notABlankNode: N3.BlankNode = writer.blank();

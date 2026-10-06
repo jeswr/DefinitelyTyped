@@ -261,7 +261,10 @@ export interface WriterBlankTriple<Q extends RDF.BaseQuad = RDF.Quad> {
 }
 
 /** Called once a write has been handed to the output stream. */
-export type WriterWriteCallback = (error?: Error | null) => void;
+// Bivariant so that callbacks annotating `error` as `Error` keep compiling.
+export type WriterWriteCallback = {
+    bivarianceHack(error?: Error | null): void;
+}["bivarianceHack"];
 
 /**
  * Called when the Writer has ended. Without an output stream, `result` is the
@@ -275,7 +278,12 @@ export type WriterEndCallback = {
 export class Writer<Q extends RDF.BaseQuad = RDF.Quad> {
     constructor(options?: WriterOptions);
     constructor(fd: any, options?: WriterOptions);
-    quadToString(subject: Q["subject"], predicate: Q["predicate"], object: Q["object"], graph?: Q["graph"]): string;
+    quadToString(
+        subject: Q["subject"] | SerializedTerm,
+        predicate: Q["predicate"],
+        object: Q["object"] | SerializedTerm,
+        graph?: Q["graph"],
+    ): string;
     quadsToString(quads: RDF.Quad[]): string;
     addQuad(
         subject: Q["subject"] | SerializedTerm,
@@ -453,6 +461,6 @@ export namespace Util {
     ): (prefix: string) => PrefixedToIri;
 }
 
-export function termToId(term: Term): string;
+export function termToId(term: Term | SerializedTerm): string;
 export function termFromId(id: string, factory?: RDF.DataFactory): Term;
 export function getRulesFromDataset(dataset: RDF.DatasetCore<RDF.Quad>): Rule[];
