@@ -244,7 +244,14 @@ export interface WriterOptions {
 }
 
 /** Called once a write has been handed to the output stream. */
-// Bivariant so that callbacks annotating `error` as `Error` keep compiling.
+// Why `{ bivarianceHack(...): void }["bivarianceHack"]` instead of a plain arrow type:
+// with `strictFunctionTypes`, TypeScript checks the parameters of arrow function types
+// strictly (contravariantly), but the parameters of methods bivariantly. Declaring the
+// callback as a method and indexing it out gives a function type that keeps the method
+// check. That lets the parameters be typed accurately (N3 can pass null or undefined)
+// while callbacks written against the old types, which annotate `error` as `Error`,
+// keep compiling. @types/react uses the same pattern for `EventHandler`:
+// https://github.com/DefinitelyTyped/DefinitelyTyped/blob/73df926871e11d055f6a97d583eb17e220a8c819/types/react/index.d.ts#L2316
 export type WriterWriteCallback = {
     bivarianceHack(error?: Error | null): void;
 }["bivarianceHack"];
@@ -253,7 +260,8 @@ export type WriterWriteCallback = {
  * Called when the Writer has ended. Without an output stream, `result` is the
  * serialized document; with one, both arguments come from that stream.
  */
-// Bivariant so that callbacks annotating `result` as `string` keep compiling.
+// Bivariant for the same reason as WriterWriteCallback, so that callbacks annotating
+// `result` as `string` keep compiling.
 export type WriterEndCallback = {
     bivarianceHack(error: Error | null | undefined, result: string | undefined): void;
 }["bivarianceHack"];
